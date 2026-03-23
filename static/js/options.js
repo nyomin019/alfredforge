@@ -86,6 +86,38 @@ const OptionsTab = {
 
     const closed = trades.filter(t => ['WIN', 'LOSS'].includes(t.outcome));
 
+    // Stats bar
+    const statsEl = document.getElementById('options-stats');
+    if (statsEl) {
+      if (closed.length) {
+        const wins = closed.filter(t => t.outcome === 'WIN').length;
+        const totalPnl = closed.reduce((s, t) => s + (t.pnl || 0), 0);
+        const totalRisk = closed.reduce((s, t) => s + Math.abs(t.max_loss || 0), 0);
+        const returnPct = totalRisk ? (totalPnl / totalRisk * 100) : 0;
+        const avgPnl = totalPnl / closed.length;
+        const avgWin = wins ? closed.filter(t => t.outcome === 'WIN').reduce((s, t) => s + (t.pnl || 0), 0) / wins : 0;
+        const avgLoss = (closed.length - wins) ? closed.filter(t => t.outcome === 'LOSS').reduce((s, t) => s + (t.pnl || 0), 0) / (closed.length - wins) : 0;
+        const expectancy = (wins / closed.length) * avgWin + ((closed.length - wins) / closed.length) * avgLoss;
+        statsEl.innerHTML = `
+          <div class="history-stat"><span class="history-stat-label">Total Trades</span><span class="history-stat-value">${closed.length}</span></div>
+          <div class="history-stat"><span class="history-stat-label">Win Rate</span><span class="history-stat-value">${formatPct(wins / closed.length * 100, false)}</span></div>
+          <div class="history-stat"><span class="history-stat-label">Total P&L</span><span class="history-stat-value ${pnlClass(totalPnl)}">${pnlStr(totalPnl)}</span></div>
+          <div class="history-stat"><span class="history-stat-label">Return on Risk</span><span class="history-stat-value ${pnlClass(returnPct)}">${returnPct >= 0 ? '+' : ''}${returnPct.toFixed(1)}%</span></div>
+          <div class="history-stat"><span class="history-stat-label">Avg P&L</span><span class="history-stat-value ${pnlClass(avgPnl)}">${pnlStr(avgPnl)}</span></div>
+          <div class="history-stat"><span class="history-stat-label">Expectancy</span><span class="history-stat-value ${pnlClass(expectancy)}">${pnlStr(expectancy)}</span></div>
+        `;
+      } else {
+        statsEl.innerHTML = `
+          <div class="history-stat"><span class="history-stat-label">Total Trades</span><span class="history-stat-value">0</span></div>
+          <div class="history-stat"><span class="history-stat-label">Win Rate</span><span class="history-stat-value">—</span></div>
+          <div class="history-stat"><span class="history-stat-label">Total P&L</span><span class="history-stat-value">$0.00</span></div>
+          <div class="history-stat"><span class="history-stat-label">Return on Risk</span><span class="history-stat-value">0.0%</span></div>
+          <div class="history-stat"><span class="history-stat-label">Avg P&L</span><span class="history-stat-value">—</span></div>
+          <div class="history-stat"><span class="history-stat-label">Expectancy</span><span class="history-stat-value">—</span></div>
+        `;
+      }
+    }
+
     if (!closed.length) {
       container.innerHTML = '<div class="empty-state">No closed trades yet</div>';
       return;

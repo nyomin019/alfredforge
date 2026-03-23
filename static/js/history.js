@@ -5,6 +5,7 @@
 const HistoryTab = {
   _trades: [],
   _filtered: [],
+  _handler: null,
 
   async load() {
     try {
@@ -14,17 +15,30 @@ const HistoryTab = {
     }
 
     this._updateContext();
-    this._populateDropdowns();
+    this._wireFilters();
+    this._populateCascade();
     this._applyFilters();
-    if (!this._wiresAdded) {
-      this._wireFilters();
-      this._wiresAdded = true;
-    }
   },
 
-  _populateDropdowns() {
-    const tickers = [...new Set(this._trades.map(t => t.ticker).filter(Boolean))].sort();
-    const strategies = [...new Set(this._trades.map(t => t.strategy).filter(Boolean))].sort();
+  _updateContext() {
+    const el = document.getElementById('history-context');
+    if (!el) return;
+    const bySource = {};
+    this._trades.forEach(t => {
+      bySource[t.source] = (bySource[t.source] || 0) + 1;
+    });
+    const parts = Object.entries(bySource)
+      .map(([s, n]) => `${s.charAt(0).toUpperCase() + s.slice(1)} (${n})`);
+    el.textContent = `All trade records · Filter by source, ticker, strategy, or date · ${parts.join(' · ')}`;
+  },
+
+  // Rebuild ticker + strategy dropdowns based on currently selected source (cascade)
+  _populateCascade() {
+    const source = document.getElementById('history-source-filter')?.value || '';
+    const baseTrades = source ? this._trades.filter(t => t.source === source) : this._trades;
+
+    const tickers = [...new Set(baseTrades.map(t => t.ticker).filter(Boolean))].sort();
+    const strategies = [...new Set(baseTrades.map(t => t.strategy).filter(Boolean))].sort();
 
     const tickerEl = document.getElementById('history-ticker-filter');
     if (tickerEl) {
@@ -43,37 +57,37 @@ const HistoryTab = {
     }
   },
 
-  _updateContext() {
-    const el = document.getElementById('history-context');
-    if (!el) return;
-    const bySource = {};
-    this._trades.forEach(t => {
-      bySource[t.source] = (bySource[t.source] || 0) + 1;
-    });
-    const parts = Object.entries(bySource)
-      .map(([s, n]) => `${s.charAt(0).toUpperCase() + s.slice(1)} (${n})`);
-    el.textContent = `All trade records · Filter by source, ticker, strategy, or date · ${parts.join(' · ')}`;
-  },
-
   _wireFilters() {
-    const ids = [
+    // Use a single stored handler so removeEventListener works correctly
+    if (!this._handler) this._handler = () => {
+      this._populateCascade();
+      this._applyFilters();
+    };
+
+    const filterIds = [
       'history-source-filter', 'history-ticker-filter',
       'history-strategy-filter', 'history-outcome-filter',
       'history-date-from', 'history-date-to',
     ];
-    ids.forEach(id => {
+
+    filterIds.forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.addEventListener('change', () => this._applyFilters());
+      if (!el) return;
+      el.removeEventListener('change', this._handler);
+      el.removeEventListener('input', this._handler);
+      el.addEventListener('change', this._handler);
+      el.addEventListener('input', this._handler);
     });
 
     const reset = document.getElementById('history-reset');
-    if (reset) reset.addEventListener('click', () => {
-      ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    if (reset) reset.onclick = () => {
+      filterIds.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      this._populateCascade();
       this._applyFilters();
-    });
+    };
 
     const exportBtn = document.getElementById('history-export');
-    if (exportBtn) exportBtn.addEventListener('click', () => this._exportCSV());
+    if (exportBtn) exportBtn.onclick = () => this._exportCSV();
   },
 
   _applyFilters() {

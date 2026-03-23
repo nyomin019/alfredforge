@@ -7,7 +7,7 @@ function makeSourceTab(source, prefix) {
     _trades: [],
     _filtered: [],
     _charts: {},
-    _wiresAdded: false,
+    _handler: null,
 
     async load() {
       try {
@@ -16,12 +16,9 @@ function makeSourceTab(source, prefix) {
         this._trades = [];
       }
       this._updateContext();
+      this._wireFilters();
       this._populateDropdowns();
       this._applyFilters();
-      if (!this._wiresAdded) {
-        this._wireFilters();
-        this._wiresAdded = true;
-      }
     },
 
     _populateDropdowns() {
@@ -55,23 +52,29 @@ function makeSourceTab(source, prefix) {
     },
 
     _wireFilters() {
+      if (!this._handler) this._handler = () => this._applyFilters();
+
       const ids = [
         `${prefix}-ticker-filter`, `${prefix}-strategy-filter`,
         `${prefix}-outcome-filter`, `${prefix}-date-from`, `${prefix}-date-to`,
       ];
       ids.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('change', () => this._applyFilters());
+        if (!el) return;
+        el.removeEventListener('change', this._handler);
+        el.removeEventListener('input', this._handler);
+        el.addEventListener('change', this._handler);
+        el.addEventListener('input', this._handler);
       });
 
       const reset = document.getElementById(`${prefix}-reset`);
-      if (reset) reset.addEventListener('click', () => {
+      if (reset) reset.onclick = () => {
         ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         this._applyFilters();
-      });
+      };
 
       const exportBtn = document.getElementById(`${prefix}-export`);
-      if (exportBtn) exportBtn.addEventListener('click', () => this._exportCSV());
+      if (exportBtn) exportBtn.onclick = () => this._exportCSV();
     },
 
     _applyFilters() {
