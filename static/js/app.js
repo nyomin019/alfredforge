@@ -181,6 +181,8 @@ const App = {
       overview: typeof OverviewTab !== 'undefined' ? OverviewTab : null,
       options: typeof OptionsTab !== 'undefined' ? OptionsTab : null,
       crypto: typeof CryptoTab !== 'undefined' ? CryptoTab : null,
+      backtest: typeof BacktestTab !== 'undefined' ? BacktestTab : null,
+      simulation: typeof SimulationTab !== 'undefined' ? SimulationTab : null,
       agent: typeof AgentTab !== 'undefined' ? AgentTab : null,
       history: typeof HistoryTab !== 'undefined' ? HistoryTab : null,
       settings: typeof SettingsTab !== 'undefined' ? SettingsTab : null,

@@ -8,6 +8,7 @@ const CryptoTab = {
   async load() {
     this.renderMetrics();
     this.initChart('BTC-USD', '1d');
+    this.renderAllocation();
     this.renderPositions();
     this.renderHistory();
     this.initControls();
@@ -36,6 +37,16 @@ const CryptoTab = {
     }
     this._chart = new CandleChart('chart-crypto-candle');
     this._chart.load(symbol, tf);
+  },
+
+  renderAllocation() {
+    // Target allocation across crypto symbols (planned %, not yet traded)
+    const data = [
+      { label: 'BTC', value: 50 },
+      { label: 'ETH', value: 30 },
+      { label: 'SOL', value: 20 },
+    ];
+    initDonutChart('chart-crypto-alloc', data);
   },
 
   renderPositions() {

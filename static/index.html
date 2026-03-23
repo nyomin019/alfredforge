@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-  <link rel="stylesheet" href="/static/css/main.css?v=12">
+  <link rel="stylesheet" href="/static/css/main.css?v=13">
 </head>
 <body>
 
@@ -67,11 +67,25 @@
       </a>
 
       <div class="nav-section-label">Research</div>
+      <a class="nav-link" data-tab="backtest" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        <span class="nav-item">
+          <span class="nav-item-label">Backtest</span>
+          <span class="nav-item-sub">3070 trades · all strategies</span>
+        </span>
+      </a>
+      <a class="nav-link" data-tab="simulation" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 0 1 10 10"/><path d="M12 2a10 10 0 0 0-10 10"/><path d="M12 22a10 10 0 0 0 10-10"/><path d="M12 22a10 10 0 0 1-10-10"/><circle cx="12" cy="12" r="3"/></svg>
+        <span class="nav-item">
+          <span class="nav-item-label">Simulation</span>
+          <span class="nav-item-sub">89 trades · synthetic fills</span>
+        </span>
+      </a>
       <a class="nav-link" data-tab="history" href="#">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         <span class="nav-item">
           <span class="nav-item-label">History</span>
-          <span class="nav-item-sub">Paper + backtest + sim</span>
+          <span class="nav-item-sub">All sources · full filter</span>
         </span>
       </a>
 
@@ -243,17 +257,22 @@
             </div>
             <div class="chart-container" id="chart-crypto-candle"></div>
           </div>
+          <div class="panel" style="flex:1">
+            <div class="panel-header"><span>Allocation</span></div>
+            <div class="chart-container" style="padding:12px">
+              <canvas id="chart-crypto-alloc"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="charts-row" style="margin-top:12px">
           <div class="panel" style="flex:2">
             <div class="panel-header"><span>Open Positions</span></div>
             <div id="crypto-positions"></div>
           </div>
-        </div>
-        <div class="panel">
-          <div class="panel-header">
-            <span>Trade History</span>
-            <button class="btn btn-ghost" id="crypto-export">Export CSV</button>
+          <div class="panel" style="flex:1">
+            <div class="panel-header"><span>Trade History</span><button class="btn btn-ghost btn--sm" id="crypto-export">Export CSV</button></div>
+            <div id="crypto-history"></div>
           </div>
-          <div id="crypto-history"></div>
         </div>
       </div>
 
@@ -273,6 +292,130 @@
         <div class="panel" style="margin-top:12px">
           <div class="panel-header"><span>Activity Log</span></div>
           <div id="agent-log" class="log-feed"></div>
+        </div>
+      </div>
+
+      <!-- ── Backtest Tab ──────────────────────────────────────────────── -->
+      <div class="tab-panel hidden" id="tab-backtest">
+        <div class="tab-context" id="backtest-context">Backtest trades · historical strategy data</div>
+        <div class="panel">
+          <div class="panel-header">
+            <span>Backtest Results</span>
+            <button class="btn btn-ghost btn--sm" id="backtest-export">Export CSV</button>
+          </div>
+          <div class="history-filters-bar">
+            <select id="backtest-ticker-filter">
+              <option value="">All Tickers</option>
+              <option value="META">META</option>
+              <option value="GOOGL">GOOGL</option>
+              <option value="SPY">SPY</option>
+            </select>
+            <select id="backtest-strategy-filter">
+              <option value="">All Strategies</option>
+              <option value="1DTE-IC">1DTE-IC</option>
+              <option value="0DTE-SPY">0DTE-SPY</option>
+            </select>
+            <select id="backtest-outcome-filter">
+              <option value="">All Outcomes</option>
+              <option value="WIN">Wins</option>
+              <option value="LOSS">Losses</option>
+            </select>
+            <input id="backtest-date-from" type="date" class="filter-date" title="From date">
+            <input id="backtest-date-to" type="date" class="filter-date" title="To date">
+            <button class="btn btn-ghost btn--sm" id="backtest-reset">Reset</button>
+          </div>
+          <div class="history-stats" id="backtest-stats"></div>
+          <div id="backtest-table-container"></div>
+        </div>
+        <div class="charts-row" style="margin-top:12px">
+          <div class="panel" style="flex:2">
+            <div class="panel-header"><span>Equity Curve</span></div>
+            <div class="chart-container" style="padding:12px">
+              <canvas id="chart-backtest-equity"></canvas>
+            </div>
+          </div>
+          <div class="panel" style="flex:1">
+            <div class="panel-header"><span>Allocation by Ticker</span></div>
+            <div class="chart-container" style="padding:12px">
+              <canvas id="chart-backtest-alloc"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="charts-row" style="margin-top:12px">
+          <div class="panel" style="flex:1">
+            <div class="panel-header"><span>Monthly P&L</span></div>
+            <div class="chart-container" style="padding:12px">
+              <canvas id="chart-backtest-monthly"></canvas>
+            </div>
+          </div>
+          <div class="panel" style="flex:1">
+            <div class="panel-header"><span>P&L by Strategy</span></div>
+            <div class="chart-container" style="padding:12px">
+              <canvas id="chart-backtest-strategy"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Simulation Tab ────────────────────────────────────────────── -->
+      <div class="tab-panel hidden" id="tab-simulation">
+        <div class="tab-context" id="simulation-context">Simulation trades · synthetic market fills</div>
+        <div class="panel">
+          <div class="panel-header">
+            <span>Simulation Results</span>
+            <button class="btn btn-ghost btn--sm" id="simulation-export">Export CSV</button>
+          </div>
+          <div class="history-filters-bar">
+            <select id="simulation-ticker-filter">
+              <option value="">All Tickers</option>
+              <option value="META">META</option>
+              <option value="GOOGL">GOOGL</option>
+              <option value="SPY">SPY</option>
+            </select>
+            <select id="simulation-strategy-filter">
+              <option value="">All Strategies</option>
+              <option value="1DTE-IC">1DTE-IC</option>
+              <option value="0DTE-SPY">0DTE-SPY</option>
+            </select>
+            <select id="simulation-outcome-filter">
+              <option value="">All Outcomes</option>
+              <option value="WIN">Wins</option>
+              <option value="LOSS">Losses</option>
+            </select>
+            <input id="simulation-date-from" type="date" class="filter-date" title="From date">
+            <input id="simulation-date-to" type="date" class="filter-date" title="To date">
+            <button class="btn btn-ghost btn--sm" id="simulation-reset">Reset</button>
+          </div>
+          <div class="history-stats" id="simulation-stats"></div>
+          <div id="simulation-table-container"></div>
+        </div>
+        <div class="charts-row" style="margin-top:12px">
+          <div class="panel" style="flex:2">
+            <div class="panel-header"><span>Equity Curve</span></div>
+            <div class="chart-container" style="padding:12px">
+              <canvas id="chart-simulation-equity"></canvas>
+            </div>
+          </div>
+          <div class="panel" style="flex:1">
+            <div class="panel-header"><span>Allocation by Ticker</span></div>
+            <div class="chart-container" style="padding:12px">
+              <canvas id="chart-simulation-alloc"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="charts-row" style="margin-top:12px">
+          <div class="panel" style="flex:1">
+            <div class="panel-header"><span>Monthly P&L</span></div>
+            <div class="chart-container" style="padding:12px">
+              <canvas id="chart-simulation-monthly"></canvas>
+            </div>
+          </div>
+          <div class="panel" style="flex:1">
+            <div class="panel-header"><span>P&L by Strategy</span></div>
+            <div class="chart-container" style="padding:12px">
+              <canvas id="chart-simulation-strategy"></canvas>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -363,6 +506,7 @@
 <script src="/static/js/crypto.js"></script>
 <script src="/static/js/agent.js"></script>
 <script src="/static/js/history.js"></script>
+<script src="/static/js/source-tabs.js"></script>
 <script src="/static/js/app.js"></script>
 
 </body>
