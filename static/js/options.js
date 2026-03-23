@@ -35,47 +35,47 @@ const OptionsTab = {
     const losses = closed.length - wins;
     const winRate = closed.length ? (wins / closed.length * 100) : 0;
     const totalPnl = closed.reduce((s, t) => s + (t.pnl || 0), 0);
-    const capital = portfolio.capital_total_aud || 2000;
-    const optionsAlloc = (portfolio.allocation_options_pct || 60) / 100;
-    const invested = capital * optionsAlloc;
     const skipped = trades.filter(t => t.status === 'SKIPPED' || t.outcome === 'SKIP').length;
     const avgWin = wins ? closed.filter(t => t.outcome === 'WIN').reduce((s, t) => s + (t.pnl || 0), 0) / wins : 0;
+    const avgLoss = losses ? closed.filter(t => t.outcome === 'LOSS').reduce((s, t) => s + (t.pnl || 0), 0) / losses : 0;
+    const totalRisk = closed.reduce((s, t) => s + Math.abs(t.max_loss || 0), 0);
+    const returnPct = totalRisk ? (totalPnl / totalRisk * 100) : 0;
 
     const cards = [
       {
-        label: 'Capital Allocated',
-        value: formatCurrency(invested),
-        subtitle: `${portfolio.allocation_options_pct || 60}% of $${capital.toLocaleString()}`,
-        type: 'primary',
-      },
-      {
-        label: 'Withdrawn',
-        value: formatCurrency(0),
-        subtitle: 'No withdrawals yet',
+        label: 'Closed Trades',
+        value: String(closed.length),
+        subtitle: `${skipped} skipped · VIX / filter`,
         type: 'default',
       },
       {
-        label: 'Paper P&L',
-        value: pnlStr(totalPnl),
-        subtitle: `Account: ${formatCurrency(invested + totalPnl)}`,
-        type: totalPnl >= 0 ? 'positive' : 'negative',
-      },
-      {
         label: 'Win Rate',
-        value: formatPct(winRate, false),
-        subtitle: `${wins}W / ${losses}L / ${skipped} skip`,
+        value: closed.length ? formatPct(winRate, false) : '—',
+        subtitle: `${wins}W / ${losses}L`,
         type: winRate >= 60 ? 'positive' : 'default',
       },
       {
+        label: 'Paper P&L',
+        value: closed.length ? pnlStr(totalPnl) : '$0.00',
+        subtitle: 'Simulated — not real money',
+        type: totalPnl > 0 ? 'positive' : totalPnl < 0 ? 'negative' : 'default',
+      },
+      {
+        label: 'Return on Risk',
+        value: closed.length ? `${returnPct >= 0 ? '+' : ''}${returnPct.toFixed(1)}%` : '0.0%',
+        subtitle: 'P&L ÷ total max loss',
+        type: returnPct > 0 ? 'positive' : returnPct < 0 ? 'negative' : 'default',
+      },
+      {
         label: 'Avg Win',
-        value: formatCurrency(avgWin),
-        subtitle: 'Per winning trade',
+        value: avgWin ? formatCurrency(avgWin) : '$0.00',
+        subtitle: avgLoss ? `Avg loss: ${formatCurrency(avgLoss)}` : 'No losses yet',
         type: 'positive',
       },
       {
-        label: 'Open Positions',
+        label: 'Open (Paper)',
         value: String(open.length),
-        subtitle: open.length ? `${open.map(p => p.ticker).join(', ')}` : 'No active trades',
+        subtitle: open.length ? open.map(p => p.ticker).join(', ') : 'No active trades',
         type: open.length ? 'primary' : 'default',
       },
     ];
