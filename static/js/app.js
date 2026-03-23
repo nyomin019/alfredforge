@@ -179,7 +179,7 @@ const App = {
 
     const tabMap = {
       overview: typeof OverviewTab !== 'undefined' ? OverviewTab : null,
-      options: typeof OptionsTab !== 'undefined' ? OptionsTab : null,
+      options: typeof LiveTab !== 'undefined' ? LiveTab : null,
       crypto: typeof CryptoTab !== 'undefined' ? CryptoTab : null,
       backtest: typeof BacktestTab !== 'undefined' ? BacktestTab : null,
       simulation: typeof SimulationTab !== 'undefined' ? SimulationTab : null,

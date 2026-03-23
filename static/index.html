@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-  <link rel="stylesheet" href="/static/css/main.css?v=16">
+  <link rel="stylesheet" href="/static/css/main.css?v=17">
 </head>
 <body>
 
@@ -52,10 +52,10 @@
 
       <div class="nav-section-label">Trading</div>
       <a class="nav-link" data-tab="options" href="#">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="9" ry="3"/><path d="M3 6v4c0 1.657 4.03 3 9 3s9-1.343 9-3V6"/><path d="M3 10v4c0 1.657 4.03 3 9 3s9-1.343 9-3v-4"/><path d="M3 14v4c0 1.657 4.03 3 9 3s9-1.343 9-3v-4"/></svg>
         <span class="nav-item">
-          <span class="nav-item-label">Options</span>
-          <span class="nav-item-sub">Paper · META / GOOGL / SPY</span>
+          <span class="nav-item-label">Real Trades</span>
+          <span class="nav-item-sub">Live broker · $0 balance</span>
         </span>
       </a>
       <a class="nav-link" data-tab="crypto" href="#">
@@ -194,44 +194,47 @@
         </div>
       </div>
 
-      <!-- ── Options Tab ───────────────────────────────────────────────── -->
+      <!-- ── Real Trades Tab ──────────────────────────────────────────── -->
       <div class="tab-panel hidden" id="tab-options">
-        <div class="tab-context">Paper trading only &nbsp;·&nbsp; 1-DTE IC on META/GOOGL &nbsp;·&nbsp; 0-DTE IC on SPY &nbsp;·&nbsp; No live trades</div>
-        <div class="metric-cards-row" id="options-metrics"></div>
-
-        <div class="charts-row">
-          <div class="panel" style="flex:3">
-            <div class="panel-header">
-              <span>Price Chart</span>
-              <div class="chart-controls">
-                <select id="options-symbol">
-                  <option value="META">META</option>
-                  <option value="GOOGL">GOOGL</option>
-                  <option value="SPY">SPY</option>
-                </select>
-                <div class="timeframe-btns" id="options-tf">
-                  <button class="tf-btn active" data-tf="1d">1D</button>
-                  <button class="tf-btn" data-tf="4h">4H</button>
-                  <button class="tf-btn" data-tf="1h">1H</button>
-                  <button class="tf-btn" data-tf="15m">15m</button>
-                </div>
-              </div>
-            </div>
-            <div class="chart-container" id="chart-options-candle"></div>
-          </div>
-          <div class="panel" style="flex:2">
-            <div class="panel-header"><span>Open Positions</span></div>
-            <div id="options-positions" style="padding:0"></div>
-          </div>
-        </div>
-
+        <div class="tab-context" id="live-context">Real broker trades · No live trades yet · Connect a broker in Settings to begin</div>
+        <div class="metric-cards-row" id="live-account-cards"></div>
         <div class="panel">
           <div class="panel-header">
-            <span>Trade History</span>
-            <button class="btn btn-ghost" id="options-export">Export CSV</button>
+            <span>Live Trades</span>
+            <button class="btn btn-ghost btn--sm" id="live-export">Export CSV</button>
           </div>
-          <div class="history-stats" id="options-stats"></div>
-          <div id="options-history"></div>
+          <div class="history-filters-bar">
+            <select id="live-ticker-filter">
+              <option value="">All Tickers</option>
+            </select>
+            <select id="live-strategy-filter">
+              <option value="">All Strategies</option>
+            </select>
+            <select id="live-outcome-filter">
+              <option value="">All Outcomes</option>
+              <option value="WIN">Wins</option>
+              <option value="LOSS">Losses</option>
+            </select>
+            <input id="live-date-from" type="date" class="filter-date" title="From date">
+            <input id="live-date-to" type="date" class="filter-date" title="To date">
+            <button class="btn btn-ghost btn--sm" id="live-reset">Reset</button>
+          </div>
+          <div class="history-stats" id="live-stats"></div>
+          <div id="live-table-container"></div>
+        </div>
+        <div class="charts-row" style="margin-top:12px">
+          <div class="panel" style="flex:2">
+            <div class="panel-header"><span>Equity Curve</span></div>
+            <div class="chart-container" style="padding:12px">
+              <canvas id="chart-live-equity"></canvas>
+            </div>
+          </div>
+          <div class="panel" style="flex:1">
+            <div class="panel-header"><span>By Strategy</span></div>
+            <div class="chart-container" style="padding:12px">
+              <canvas id="chart-live-strategy"></canvas>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -489,16 +492,16 @@
 </div><!-- /main-app -->
 
 <!-- Scripts -->
-<script src="/static/js/components.js?v=16"></script>
-<script src="/static/js/charts.js?v=16"></script>
-<script src="/static/js/setup.js?v=16"></script>
-<script src="/static/js/dashboard.js?v=16"></script>
-<script src="/static/js/options.js?v=16"></script>
-<script src="/static/js/crypto.js?v=16"></script>
-<script src="/static/js/agent.js?v=16"></script>
-<script src="/static/js/history.js?v=16"></script>
-<script src="/static/js/source-tabs.js?v=16"></script>
-<script src="/static/js/app.js?v=16"></script>
+<script src="/static/js/components.js?v=17"></script>
+<script src="/static/js/charts.js?v=17"></script>
+<script src="/static/js/setup.js?v=17"></script>
+<script src="/static/js/dashboard.js?v=17"></script>
+<script src="/static/js/options.js?v=17"></script>
+<script src="/static/js/crypto.js?v=17"></script>
+<script src="/static/js/agent.js?v=17"></script>
+<script src="/static/js/history.js?v=17"></script>
+<script src="/static/js/source-tabs.js?v=17"></script>
+<script src="/static/js/app.js?v=17"></script>
 
 </body>
 </html>

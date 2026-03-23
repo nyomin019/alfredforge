@@ -219,3 +219,83 @@ function makeSourceTab(source, prefix) {
 
 const BacktestTab = makeSourceTab('backtest', 'backtest');
 const SimulationTab = makeSourceTab('simulation', 'simulation');
+
+// ── Live / Real Trades tab ────────────────────────────────────────────────────
+// Extends the source tab factory with account-level metric cards at the top.
+// All values show $0.00 until a real broker is connected and trades are logged.
+
+const LiveTab = Object.assign(makeSourceTab('live', 'live'), {
+  async load() {
+    let portfolio = {};
+    try {
+      [this._trades, portfolio] = await Promise.all([
+        fetch('/api/trades?source=live&limit=5000').then(r => r.json()),
+        fetch('/api/portfolio').then(r => r.json()),
+      ]);
+    } catch (e) {
+      this._trades = [];
+    }
+    this._renderAccountCards(portfolio);
+    this._updateContext();
+    this._wireFilters();
+    this._populateDropdowns();
+    this._applyFilters();
+  },
+
+  _renderAccountCards(portfolio) {
+    const container = document.getElementById('live-account-cards');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const closed = this._trades.filter(t => ['WIN', 'LOSS'].includes(t.outcome));
+    const wins = closed.filter(t => t.outcome === 'WIN').length;
+    const totalPnl = closed.reduce((s, t) => s + (t.pnl || 0), 0);
+    const winRate = closed.length ? (wins / closed.length * 100) : 0;
+
+    // Account balance comes from broker — $0 until connected
+    const balance = portfolio.live_balance || 0;
+    const deposited = portfolio.live_deposited || 0;
+    const returnPct = deposited ? (totalPnl / deposited * 100) : 0;
+
+    const cards = [
+      {
+        label: 'Account Balance',
+        value: formatCurrency(balance),
+        subtitle: balance ? 'Live broker balance' : 'No broker connected',
+        type: 'primary',
+      },
+      {
+        label: 'Total Deposited',
+        value: formatCurrency(deposited),
+        subtitle: deposited ? 'Real money in' : 'Nothing deposited yet',
+        type: 'default',
+      },
+      {
+        label: 'Live P&L',
+        value: closed.length ? pnlStr(totalPnl) : '$0.00',
+        subtitle: closed.length ? `${closed.length} closed trades` : 'No closed trades yet',
+        type: totalPnl > 0 ? 'positive' : totalPnl < 0 ? 'negative' : 'default',
+      },
+      {
+        label: 'Return',
+        value: deposited ? `${returnPct >= 0 ? '+' : ''}${returnPct.toFixed(1)}%` : '0.0%',
+        subtitle: 'On deposited capital',
+        type: returnPct > 0 ? 'positive' : returnPct < 0 ? 'negative' : 'default',
+      },
+      {
+        label: 'Win Rate',
+        value: closed.length ? formatPct(winRate, false) : '—',
+        subtitle: closed.length ? `${wins}W / ${closed.length - wins}L` : 'No trades yet',
+        type: winRate >= 60 ? 'positive' : 'default',
+      },
+      {
+        label: 'Open Positions',
+        value: '0',
+        subtitle: 'No active trades',
+        type: 'default',
+      },
+    ];
+
+    cards.forEach(c => container.appendChild(MetricCard(c)));
+  },
+});
