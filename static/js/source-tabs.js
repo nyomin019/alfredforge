@@ -82,6 +82,8 @@ function makeSourceTab(source, prefix) {
       const wins = trades.filter(t => t.outcome === 'WIN').length;
       const losses = trades.length - wins;
       const totalPnl = trades.reduce((s, t) => s + (t.pnl || 0), 0);
+      const totalRisk = trades.reduce((s, t) => s + Math.abs(t.max_loss || 0), 0);
+      const returnPct = totalRisk ? (totalPnl / totalRisk * 100) : 0;
       const avgPnl = totalPnl / trades.length;
       const avgWinPnl = wins ? trades.filter(t => t.outcome === 'WIN').reduce((s, t) => s + (t.pnl || 0), 0) / wins : 0;
       const avgLossPnl = losses ? trades.filter(t => t.outcome === 'LOSS').reduce((s, t) => s + (t.pnl || 0), 0) / losses : 0;
@@ -92,6 +94,7 @@ function makeSourceTab(source, prefix) {
         <div class="history-stat"><span class="history-stat-label">Trades</span><span class="history-stat-value">${trades.length.toLocaleString()}</span></div>
         <div class="history-stat"><span class="history-stat-label">Win Rate</span><span class="history-stat-value">${formatPct(wins / trades.length * 100, false)}</span></div>
         <div class="history-stat"><span class="history-stat-label">Total P&L</span><span class="history-stat-value ${pnlClass(totalPnl)}">${pnlStr(totalPnl)}</span></div>
+        <div class="history-stat"><span class="history-stat-label">Return on Risk</span><span class="history-stat-value ${pnlClass(returnPct)}">${returnPct >= 0 ? '+' : ''}${returnPct.toFixed(1)}%</span></div>
         <div class="history-stat"><span class="history-stat-label">Avg P&L</span><span class="history-stat-value ${pnlClass(avgPnl)}">${pnlStr(avgPnl)}</span></div>
         <div class="history-stat"><span class="history-stat-label">Expectancy</span><span class="history-stat-value ${pnlClass(expectancy)}">${pnlStr(expectancy)}</span></div>
         <div class="history-stat"><span class="history-stat-label">Max Drawdown</span><span class="history-stat-value pnl-negative">${maxDD.toFixed(1)}%</span></div>
