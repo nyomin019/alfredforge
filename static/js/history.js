@@ -1,174 +1,177 @@
 /**
- * AlfredForge — History tab (unified trade history + analytics)
+ * AlfredForge — History tab (all trades: paper + simulation + backtest)
  */
 
 const HistoryTab = {
   _trades: [],
-  _filteredTrades: [],
+  _filtered: [],
 
   async load() {
     try {
-      this._trades = await fetch('/api/trades?limit=500').then(r => r.json());
+      this._trades = await fetch('/api/trades?limit=5000').then(r => r.json());
     } catch (e) {
       this._trades = [];
-      console.error('History tab load error:', e);
     }
 
-    this._filteredTrades = [...this._trades];
-    this.renderFilters();
-    this.renderTable(this._filteredTrades);
-    this.renderAnalytics(this._filteredTrades);
+    this._updateContext();
+    this._applyFilters();
+    this._wireFilters();
   },
 
-  renderFilters() {
-    const sourceFilter = document.getElementById('history-source-filter');
-    const outcomeFilter = document.getElementById('history-outcome-filter');
-
-    const applyFilters = () => {
-      const source = sourceFilter?.value || '';
-      const outcome = outcomeFilter?.value || '';
-
-      this._filteredTrades = this._trades.filter(t => {
-        if (source && t.source !== source) return false;
-        if (outcome && t.outcome !== outcome) return false;
-        return true;
-      });
-
-      this.renderTable(this._filteredTrades);
-      this.renderAnalytics(this._filteredTrades);
-    };
-
-    if (sourceFilter) sourceFilter.addEventListener('change', applyFilters);
-    if (outcomeFilter) outcomeFilter.addEventListener('change', applyFilters);
+  _updateContext() {
+    const el = document.getElementById('history-context');
+    if (!el) return;
+    const bySource = {};
+    this._trades.forEach(t => {
+      bySource[t.source] = (bySource[t.source] || 0) + 1;
+    });
+    const parts = Object.entries(bySource)
+      .map(([s, n]) => `${s.charAt(0).toUpperCase() + s.slice(1)} (${n})`);
+    el.textContent = `All trade records · Filter by source, ticker, strategy, or date · ${parts.join(' · ')}`;
   },
 
-  renderTable(trades) {
+  _wireFilters() {
+    const ids = [
+      'history-source-filter', 'history-ticker-filter',
+      'history-strategy-filter', 'history-outcome-filter',
+      'history-date-from', 'history-date-to',
+    ];
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('change', () => this._applyFilters());
+    });
+
+    const reset = document.getElementById('history-reset');
+    if (reset) reset.addEventListener('click', () => {
+      ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      this._applyFilters();
+    });
+
+    const exportBtn = document.getElementById('history-export');
+    if (exportBtn) exportBtn.addEventListener('click', () => this._exportCSV());
+  },
+
+  _applyFilters() {
+    const source   = document.getElementById('history-source-filter')?.value || '';
+    const ticker   = document.getElementById('history-ticker-filter')?.value || '';
+    const strategy = document.getElementById('history-strategy-filter')?.value || '';
+    const outcome  = document.getElementById('history-outcome-filter')?.value || '';
+    const dateFrom = document.getElementById('history-date-from')?.value || '';
+    const dateTo   = document.getElementById('history-date-to')?.value || '';
+
+    this._filtered = this._trades.filter(t => {
+      if (source   && t.source   !== source)   return false;
+      if (ticker   && t.ticker   !== ticker)   return false;
+      if (strategy && t.strategy !== strategy) return false;
+      if (outcome  && t.outcome  !== outcome)  return false;
+      if (dateFrom && t.date_entry < dateFrom) return false;
+      if (dateTo   && t.date_entry > dateTo)   return false;
+      return true;
+    });
+
+    const closed = this._filtered.filter(t => ['WIN','LOSS'].includes(t.outcome));
+    this._renderStats(closed);
+    this._renderTable(closed);
+    this._renderCharts(closed);
+  },
+
+  _renderStats(trades) {
+    const el = document.getElementById('history-stats');
+    if (!el) return;
+    if (!trades.length) { el.innerHTML = ''; return; }
+
+    const wins = trades.filter(t => t.outcome === 'WIN').length;
+    const totalPnl = trades.reduce((s, t) => s + (t.pnl || 0), 0);
+    const avgPnl = totalPnl / trades.length;
+    const maxDD = this._calcMaxDrawdown(trades);
+    const expectancy = (wins / trades.length) * (trades.filter(t => t.outcome === 'WIN').reduce((s,t) => s+(t.pnl||0), 0) / (wins||1))
+                     + ((trades.length - wins) / trades.length) * (trades.filter(t => t.outcome === 'LOSS').reduce((s,t) => s+(t.pnl||0), 0) / ((trades.length-wins)||1));
+
+    el.innerHTML = `
+      <div class="history-stat"><span class="history-stat-label">Total Trades</span><span class="history-stat-value">${trades.length.toLocaleString()}</span></div>
+      <div class="history-stat"><span class="history-stat-label">Win Rate</span><span class="history-stat-value">${formatPct(wins/trades.length*100, false)}</span></div>
+      <div class="history-stat"><span class="history-stat-label">Total P&L</span><span class="history-stat-value ${pnlClass(totalPnl)}">${pnlStr(totalPnl)}</span></div>
+      <div class="history-stat"><span class="history-stat-label">Avg P&L</span><span class="history-stat-value ${pnlClass(avgPnl)}">${pnlStr(avgPnl)}</span></div>
+      <div class="history-stat"><span class="history-stat-label">Expectancy</span><span class="history-stat-value ${pnlClass(expectancy)}">${pnlStr(expectancy)}</span></div>
+      <div class="history-stat"><span class="history-stat-label">Max Drawdown</span><span class="history-stat-value pnl-negative">${maxDD.toFixed(1)}%</span></div>
+    `;
+  },
+
+  _renderTable(trades) {
     const container = document.getElementById('history-table-container');
     if (!container) return;
 
-    const closed = trades.filter(t => ['WIN', 'LOSS'].includes(t.outcome));
-
-    if (!closed.length) {
-      container.innerHTML = '<div class="empty-state">No closed trades matching filters</div>';
+    if (!trades.length) {
+      container.innerHTML = '<div class="empty-state">No trades match the current filters</div>';
       return;
     }
 
-    const cols = ['Date', 'Ticker', 'Strategy', 'Entry $', 'Exit $', 'Credit', 'P&L', '%', 'Outcome', 'Source'];
-    const rows = closed.map(t => {
-      const pct = (t.pnl !== null && t.max_loss) ? (t.pnl / Math.abs(t.max_loss) * 100) : 0;
+    const cols = ['Date', 'Ticker', 'Strategy', 'Source', 'Entry $', 'Credit', 'P&L', 'Return %', 'VIX', 'Outcome'];
+    const rows = trades.map(t => {
+      const ret = (t.pnl !== null && t.max_loss) ? (t.pnl / Math.abs(t.max_loss) * 100) : 0;
       return [
-        formatDate(t.date_exit),
+        formatDate(t.date_exit || t.date_entry),
         t.ticker || '—',
         t.strategy || '—',
+        t.source || '—',
         formatCurrency(t.s_entry),
-        formatCurrency(t.s_exit),
         formatCurrency(t.credit),
         pnlStr(t.pnl),
-        formatPct(pct),
+        formatPct(ret),
+        t.vix ? t.vix.toFixed(1) : '—',
         t.outcome,
-        t.source || '—',
       ];
     });
 
     container.innerHTML = '';
-    container.appendChild(buildTable(cols, rows, { paginate: true, sortable: true, exportId: 'history-export' }));
-
-    // Wire up export button
-    const exportBtn = document.getElementById('history-export');
-    if (exportBtn) {
-      exportBtn.onclick = () => exportCSV(cols, rows, 'alfredforge-trades');
-    }
+    container.appendChild(buildTable(cols, rows, { paginate: true, sortable: true }));
   },
 
-  renderAnalytics(trades) {
-    const closed = trades.filter(t => ['WIN', 'LOSS'].includes(t.outcome));
+  _renderCharts(trades) {
+    initEquityCurve('chart-equity', trades);
+    initDrawdownChart('chart-drawdown', trades);
 
-    initEquityCurve('chart-equity', closed);
-    initDrawdownChart('chart-drawdown', closed);
-
-    // Best / worst trade cards
-    const sorted = [...closed]
-      .filter(t => t.pnl !== null)
-      .sort((a, b) => (b.pnl || 0) - (a.pnl || 0));
-
+    const sorted = [...trades].filter(t => t.pnl !== null).sort((a,b) => (b.pnl||0)-(a.pnl||0));
     const best = sorted[0];
     const worst = sorted[sorted.length - 1];
 
     const bestEl = document.getElementById('best-trade');
+    if (bestEl) bestEl.innerHTML = best
+      ? `<div class="metric-value pnl-positive">${pnlStr(best.pnl)}</div>
+         <div class="metric-subtitle">${best.ticker||'—'} · ${best.strategy||'—'}</div>
+         <div class="metric-subtitle">${formatDate(best.date_exit)}</div>`
+      : '<div class="empty-state">No data</div>';
+
     const worstEl = document.getElementById('worst-trade');
+    if (worstEl) worstEl.innerHTML = worst && worst.pnl < 0
+      ? `<div class="metric-value pnl-negative">${pnlStr(worst.pnl)}</div>
+         <div class="metric-subtitle">${worst.ticker||'—'} · ${worst.strategy||'—'}</div>
+         <div class="metric-subtitle">${formatDate(worst.date_exit)}</div>`
+      : '<div class="empty-state">No losses yet</div>';
+  },
 
-    if (bestEl) {
-      if (best) {
-        bestEl.innerHTML = `
-          <div class="metric-value pnl-positive">${pnlStr(best.pnl)}</div>
-          <div class="metric-subtitle">${best.ticker || '—'} · ${formatDate(best.date_exit)}</div>
-          <div class="metric-subtitle">${best.strategy || '—'}</div>
-        `;
-      } else {
-        bestEl.innerHTML = '<div class="empty-state">No data</div>';
-      }
-    }
-
-    if (worstEl) {
-      if (worst && worst.pnl < 0) {
-        worstEl.innerHTML = `
-          <div class="metric-value pnl-negative">${pnlStr(worst.pnl)}</div>
-          <div class="metric-subtitle">${worst.ticker || '—'} · ${formatDate(worst.date_exit)}</div>
-          <div class="metric-subtitle">${worst.strategy || '—'}</div>
-        `;
-      } else {
-        worstEl.innerHTML = '<div class="empty-state">No losses yet</div>';
-      }
-    }
-
-    // Summary stats for history tab
-    if (closed.length > 0) {
-      const wins = closed.filter(t => t.outcome === 'WIN').length;
-      const totalPnl = closed.reduce((s, t) => s + (t.pnl || 0), 0);
-      const avgPnl = totalPnl / closed.length;
-      const maxDrawdown = this._calcMaxDrawdown(closed);
-
-      const statsEl = document.getElementById('history-stats');
-      if (statsEl) {
-        statsEl.innerHTML = `
-          <div class="history-stat">
-            <span class="history-stat-label">Total Trades</span>
-            <span class="history-stat-value">${closed.length}</span>
-          </div>
-          <div class="history-stat">
-            <span class="history-stat-label">Win Rate</span>
-            <span class="history-stat-value">${formatPct(wins / closed.length * 100, false)}</span>
-          </div>
-          <div class="history-stat">
-            <span class="history-stat-label">Total P&L</span>
-            <span class="history-stat-value ${pnlClass(totalPnl)}">${pnlStr(totalPnl)}</span>
-          </div>
-          <div class="history-stat">
-            <span class="history-stat-label">Avg P&L</span>
-            <span class="history-stat-value ${pnlClass(avgPnl)}">${pnlStr(avgPnl)}</span>
-          </div>
-          <div class="history-stat">
-            <span class="history-stat-label">Max Drawdown</span>
-            <span class="history-stat-value pnl-negative">${maxDrawdown.toFixed(1)}%</span>
-          </div>
-        `;
-      }
-    }
+  _exportCSV() {
+    const cols = ['Date','Ticker','Strategy','Source','Entry $','Credit','P&L','Return %','VIX','Outcome'];
+    const closed = this._filtered.filter(t => ['WIN','LOSS'].includes(t.outcome));
+    const rows = closed.map(t => {
+      const ret = (t.pnl !== null && t.max_loss) ? (t.pnl / Math.abs(t.max_loss) * 100) : 0;
+      return [
+        t.date_exit || t.date_entry, t.ticker, t.strategy, t.source,
+        t.s_entry, t.credit, t.pnl, ret.toFixed(2), t.vix, t.outcome,
+      ];
+    });
+    exportCSV(cols, rows, 'alfredforge-trades');
   },
 
   _calcMaxDrawdown(trades) {
     const sorted = [...trades]
       .filter(t => t.date_exit && t.pnl !== null)
-      .sort((a, b) => a.date_exit.localeCompare(b.date_exit));
-
+      .sort((a,b) => a.date_exit.localeCompare(b.date_exit));
     let cum = 0, peak = 0, maxDD = 0;
     sorted.forEach(t => {
       cum += t.pnl || 0;
       peak = Math.max(peak, cum);
-      if (peak > 0) {
-        const dd = (peak - cum) / peak * 100;
-        maxDD = Math.max(maxDD, dd);
-      }
+      if (peak > 0) maxDD = Math.max(maxDD, (peak - cum) / peak * 100);
     });
     return maxDD;
   },

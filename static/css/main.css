@@ -256,13 +256,14 @@ html, body {
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  padding: 0 24px;
-  gap: 24px;
+  padding: 0 16px;
+  gap: 16px;
 }
 
 .topbar-metric {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
 }
 
 .topbar-label {
@@ -275,30 +276,63 @@ html, body {
 
 .topbar-value {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text);
 }
 
 .topbar-sep {
   width: 1px;
-  height: 28px;
+  height: 24px;
   background: var(--border);
+  flex-shrink: 0;
 }
 
-.topbar-spacer { flex: 1; }
+.topbar-spacer { flex: 1; min-width: 8px; }
 
-.topbar-clock {
+/* ── Topbar right group ───────────────────────────────────────────────────── */
+.topbar-right {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
-.clock-aest { color: var(--text); font-weight: 500; }
-.clock-et   { color: var(--text-muted); }
-.clock-sep  { color: var(--text-dim); }
+.topbar-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: stretch;
+}
+
+.topbar-vix, .market-status {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 7px;
+  border-radius: 4px;
+  border: 1px solid;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Clock: 3-col grid so date/label | HH:MM:SS | TZ stack perfectly */
+.topbar-clock {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  column-gap: 5px;
+  row-gap: 2px;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.clock-label { color: var(--text-muted); white-space: nowrap; }
+.clock-time  { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.clock-tz    { color: var(--text-muted); font-size: 10px; font-weight: 600; }
+.clock-et    { color: var(--accent); }
 
 .market-status {
   font-size: 10px;
@@ -315,15 +349,6 @@ html, body {
 .market-after  { color: var(--orange); background: #e67e2214; border-color: var(--orange); }
 .market-closed { color: var(--text-muted); background: var(--surface-3); border-color: var(--border); }
 
-.topbar-vix {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  padding: 4px 10px;
-  border-radius: 4px;
-  border: 1px solid;
-}
 .topbar-vix--ok { color: var(--accent); background: var(--accent-dim); border-color: var(--accent); }
 .topbar-vix--warn { color: var(--red); background: var(--red-dim); border-color: var(--red); }
 
@@ -846,6 +871,42 @@ html, body {
   color: var(--text);
   font-size: 12px;
   outline: none;
+}
+
+.history-filters-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.history-filters-bar select,
+.filter-date {
+  padding: 5px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+  height: 30px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.history-filters-bar select:hover,
+.filter-date:hover,
+.history-filters-bar select:focus,
+.filter-date:focus {
+  border-color: var(--accent);
+}
+
+.filter-date {
+  font-family: 'JetBrains Mono', monospace;
+  color-scheme: light;
 }
 
 .history-stats {

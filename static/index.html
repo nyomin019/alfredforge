@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-  <link rel="stylesheet" href="/static/css/main.css?v=6">
+  <link rel="stylesheet" href="/static/css/main.css?v=12">
 </head>
 <body>
 
@@ -112,22 +112,28 @@
     <!-- Topbar -->
     <header class="topbar">
       <div class="topbar-metric">
-        <span class="topbar-label">Portfolio</span>
+        <span class="topbar-label">Paper Account</span>
         <span class="topbar-value" id="topbar-total">—</span>
+      </div>
+      <div class="topbar-sep"></div>
+      <div class="topbar-metric">
+        <span class="topbar-label">Paper P&L</span>
+        <span class="topbar-value" id="topbar-alltime">—</span>
       </div>
       <div class="topbar-sep"></div>
       <div class="topbar-metric">
         <span class="topbar-label">Today P&L</span>
         <span class="topbar-value" id="topbar-today">—</span>
       </div>
-      <div class="topbar-sep"></div>
-      <div class="topbar-metric">
-        <span class="topbar-label">All-time P&L</span>
-        <span class="topbar-value" id="topbar-alltime">—</span>
-      </div>
       <div class="topbar-spacer"></div>
-      <div id="vix-badge" class="topbar-vix hidden"></div>
-      <div class="topbar-clock" id="aest-clock">—</div>
+      <div class="topbar-right">
+        <div class="topbar-badges">
+          <div id="vix-badge" class="topbar-vix hidden"></div>
+          <div id="market-badge" class="market-status market-closed">—</div>
+        </div>
+        <div class="topbar-sep"></div>
+        <div class="topbar-clock" id="aest-clock"></div>
+      </div>
     </header>
 
     <!-- Tab Area -->
@@ -272,23 +278,38 @@
 
       <!-- ── History Tab ───────────────────────────────────────────────── -->
       <div class="tab-panel hidden" id="tab-history">
-        <div class="tab-context">All trade records &nbsp;·&nbsp; Filter by source below &nbsp;·&nbsp; Paper (4) · Simulation (89) · Backtest (3070)</div>
+        <div class="tab-context" id="history-context">All trade records · Paper · Simulation · Backtest</div>
         <div class="panel">
           <div class="panel-header">
             <span>All Trades</span>
-            <div class="history-filters">
-              <select id="history-source-filter">
-                <option value="">All Sources</option>
-                <option value="paper">Live Paper</option>
-                <option value="simulation">Simulation</option>
-              </select>
-              <select id="history-outcome-filter">
-                <option value="">All Outcomes</option>
-                <option value="WIN">Wins</option>
-                <option value="LOSS">Losses</option>
-              </select>
-              <button class="btn btn-ghost" id="history-export">Export CSV</button>
-            </div>
+            <button class="btn btn-ghost btn--sm" id="history-export">Export CSV</button>
+          </div>
+          <div class="history-filters-bar">
+            <select id="history-source-filter">
+              <option value="">All Sources</option>
+              <option value="paper">Paper</option>
+              <option value="simulation">Simulation</option>
+              <option value="backtest">Backtest</option>
+            </select>
+            <select id="history-ticker-filter">
+              <option value="">All Tickers</option>
+              <option value="META">META</option>
+              <option value="GOOGL">GOOGL</option>
+              <option value="SPY">SPY</option>
+            </select>
+            <select id="history-strategy-filter">
+              <option value="">All Strategies</option>
+              <option value="1DTE-IC">1DTE-IC</option>
+              <option value="0DTE-SPY">0DTE-SPY</option>
+            </select>
+            <select id="history-outcome-filter">
+              <option value="">All Outcomes</option>
+              <option value="WIN">Wins</option>
+              <option value="LOSS">Losses</option>
+            </select>
+            <input id="history-date-from" type="date" class="filter-date" title="From date">
+            <input id="history-date-to" type="date" class="filter-date" title="To date">
+            <button class="btn btn-ghost btn--sm" id="history-reset">Reset</button>
           </div>
           <div class="history-stats" id="history-stats"></div>
           <div id="history-table-container"></div>

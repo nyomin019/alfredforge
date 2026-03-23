@@ -84,11 +84,14 @@ const App = {
       const status = getMarketStatus(now);
 
       el.innerHTML =
-        `<span class="clock-aest">${aestDate} &nbsp;${aestTime} AEST</span>` +
-        `<span class="clock-sep">·</span>` +
-        `<span class="clock-et">NY ${etTime}</span>` +
-        `<span class="clock-sep">·</span>` +
-        `<span class="market-status ${status.cls}">${status.label}</span>`;
+        `<span class="clock-label">${aestDate}</span><span class="clock-time">${aestTime}</span><span class="clock-tz">AEST</span>` +
+        `<span></span><span class="clock-time">${etTime}</span><span class="clock-tz clock-et">NY</span>`;
+
+      const mb = document.getElementById('market-badge');
+      if (mb) {
+        mb.textContent = status.label;
+        mb.className = `market-status ${status.cls}`;
+      }
     };
 
     update();
@@ -133,19 +136,20 @@ const App = {
     const todayEl = document.getElementById('topbar-today');
     const alltimeEl = document.getElementById('topbar-alltime');
 
+    // Only show paper trading numbers — backtest/simulation are not real money
+    const paper = (p.by_source || {}).paper || {};
+    const paperPnl = paper.pnl || 0;
+    const capital = p.capital_total_aud || 2000;
+
     if (totalEl) {
-      const capital = p.capital_total_aud || 2000;
-      const totalValue = capital + (p.total_pnl || 0);
-      totalEl.textContent = formatCurrency(totalValue);
+      totalEl.textContent = formatCurrency(capital + paperPnl);
     }
     if (todayEl) {
-      // Today P&L is not tracked separately yet — show total as placeholder
       todayEl.textContent = '—';
     }
     if (alltimeEl) {
-      const pnl = p.total_pnl || 0;
-      alltimeEl.textContent = pnlStr(pnl);
-      alltimeEl.className = 'topbar-value ' + pnlClass(pnl);
+      alltimeEl.textContent = pnlStr(paperPnl);
+      alltimeEl.className = 'topbar-value ' + pnlClass(paperPnl);
     }
   },
 
