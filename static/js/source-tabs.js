@@ -16,10 +16,32 @@ function makeSourceTab(source, prefix) {
         this._trades = [];
       }
       this._updateContext();
+      this._populateDropdowns();
       this._applyFilters();
       if (!this._wiresAdded) {
         this._wireFilters();
         this._wiresAdded = true;
+      }
+    },
+
+    _populateDropdowns() {
+      const tickers = [...new Set(this._trades.map(t => t.ticker).filter(Boolean))].sort();
+      const strategies = [...new Set(this._trades.map(t => t.strategy).filter(Boolean))].sort();
+
+      const tickerEl = document.getElementById(`${prefix}-ticker-filter`);
+      if (tickerEl) {
+        const cur = tickerEl.value;
+        tickerEl.innerHTML = '<option value="">All Tickers</option>' +
+          tickers.map(t => `<option value="${t}">${t}</option>`).join('');
+        if (tickers.includes(cur)) tickerEl.value = cur;
+      }
+
+      const stratEl = document.getElementById(`${prefix}-strategy-filter`);
+      if (stratEl) {
+        const cur = stratEl.value;
+        stratEl.innerHTML = '<option value="">All Strategies</option>' +
+          strategies.map(s => `<option value="${s}">${s}</option>`).join('');
+        if (strategies.includes(cur)) stratEl.value = cur;
       }
     },
 
