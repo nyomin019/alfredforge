@@ -17,30 +17,67 @@ const OptionsTab = {
       console.error('Options tab load error:', e);
     }
 
-    this.renderMetrics(portfolio, trades);
+    this.renderMetrics(portfolio, trades, positions);
     this.initChart('META', '1d');
     this.renderPositions(positions);
     this.renderHistory(trades);
     this.initControls();
   },
 
-  renderMetrics(portfolio, trades) {
+  renderMetrics(portfolio, trades, positions) {
     const container = document.getElementById('options-metrics');
     if (!container) return;
     container.innerHTML = '';
 
     const closed = trades.filter(t => ['WIN', 'LOSS'].includes(t.outcome));
+    const open = positions || [];
     const wins = closed.filter(t => t.outcome === 'WIN').length;
+    const losses = closed.length - wins;
     const winRate = closed.length ? (wins / closed.length * 100) : 0;
     const totalPnl = closed.reduce((s, t) => s + (t.pnl || 0), 0);
+    const capital = portfolio.capital_total_aud || 2000;
+    const optionsAlloc = (portfolio.allocation_options_pct || 60) / 100;
+    const invested = capital * optionsAlloc;
     const skipped = trades.filter(t => t.status === 'SKIPPED' || t.outcome === 'SKIP').length;
+    const avgWin = wins ? closed.filter(t => t.outcome === 'WIN').reduce((s, t) => s + (t.pnl || 0), 0) / wins : 0;
 
     const cards = [
-      { label: 'Paper Trades', value: String(closed.length), subtitle: `${skipped} skipped (VIX/filter)`, type: 'default' },
-      { label: 'Win Rate', value: formatPct(winRate, false), subtitle: `${wins}W / ${closed.length - wins}L`, type: winRate >= 60 ? 'positive' : 'default' },
-      { label: 'Total P&L', value: pnlStr(totalPnl), subtitle: 'Paper money', type: totalPnl >= 0 ? 'positive' : 'negative' },
-      { label: 'Avg Win', value: formatCurrency(portfolio.avg_win || 0), subtitle: 'Per winning trade', type: 'positive' },
-      { label: 'Open Positions', value: String(positions ? positions.length : 0), subtitle: 'Active trades', type: 'default' },
+      {
+        label: 'Capital Allocated',
+        value: formatCurrency(invested),
+        subtitle: `${portfolio.allocation_options_pct || 60}% of $${capital.toLocaleString()}`,
+        type: 'primary',
+      },
+      {
+        label: 'Withdrawn',
+        value: formatCurrency(0),
+        subtitle: 'No withdrawals yet',
+        type: 'default',
+      },
+      {
+        label: 'Paper P&L',
+        value: pnlStr(totalPnl),
+        subtitle: `Account: ${formatCurrency(invested + totalPnl)}`,
+        type: totalPnl >= 0 ? 'positive' : 'negative',
+      },
+      {
+        label: 'Win Rate',
+        value: formatPct(winRate, false),
+        subtitle: `${wins}W / ${losses}L / ${skipped} skip`,
+        type: winRate >= 60 ? 'positive' : 'default',
+      },
+      {
+        label: 'Avg Win',
+        value: formatCurrency(avgWin),
+        subtitle: 'Per winning trade',
+        type: 'positive',
+      },
+      {
+        label: 'Open Positions',
+        value: String(open.length),
+        subtitle: open.length ? `${open.map(p => p.ticker).join(', ')}` : 'No active trades',
+        type: open.length ? 'primary' : 'default',
+      },
     ];
 
     cards.forEach(c => container.appendChild(MetricCard(c)));
