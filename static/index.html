@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AlfredForge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <link rel="stylesheet" href="/static/css/main.css?v=6">
+</head>
+<body>
+
+<!-- ── Setup Wizard Overlay ───────────────────────────────────────────────── -->
+<div id="setup-overlay" class="hidden">
+  <div class="wizard-card">
+    <div class="wizard-header">
+      <div class="wizard-dots" id="wizard-dots"></div>
+      <div class="wizard-title" id="wizard-title">Welcome</div>
+    </div>
+    <div class="wizard-body" id="wizard-body"></div>
+    <div class="wizard-footer">
+      <button class="btn btn-ghost" id="wizard-prev" onclick="SetupWizard.prev()">← Back</button>
+      <button class="btn btn-primary" id="wizard-next" onclick="SetupWizard.next()">Next →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Main App ───────────────────────────────────────────────────────────── -->
+<div id="main-app" class="hidden">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">AF</div>
+      <div>
+        <div class="logo-text">AlfredForge</div>
+        <div class="logo-sub">Trading Dashboard</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Dashboard</div>
+      <a class="nav-link active" data-tab="overview" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span class="nav-item">
+          <span class="nav-item-label">Overview</span>
+          <span class="nav-item-sub">Paper milestone &amp; P&amp;L</span>
+        </span>
+      </a>
+
+      <div class="nav-section-label">Trading</div>
+      <a class="nav-link" data-tab="options" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        <span class="nav-item">
+          <span class="nav-item-label">Options</span>
+          <span class="nav-item-sub">Paper · META / GOOGL / SPY</span>
+        </span>
+      </a>
+      <a class="nav-link" data-tab="crypto" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="9" y1="4" x2="9" y2="6"/><line x1="13" y1="4" x2="13" y2="6"/><line x1="9" y1="18" x2="9" y2="20"/><line x1="13" y1="18" x2="13" y2="20"/><path d="M8 6h5a3 3 0 0 1 0 6H8V6z"/><path d="M8 12h5.5a3 3 0 0 1 0 6H8v-6z"/><line x1="8" y1="6" x2="8" y2="18"/></svg></svg>
+        <span class="nav-item">
+          <span class="nav-item-label">Crypto</span>
+          <span class="nav-item-sub">Signals · BTC / ETH / SOL</span>
+        </span>
+      </a>
+
+      <div class="nav-section-label">Research</div>
+      <a class="nav-link" data-tab="history" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span class="nav-item">
+          <span class="nav-item-label">History</span>
+          <span class="nav-item-sub">Paper + backtest + sim</span>
+        </span>
+      </a>
+
+      <div class="nav-section-label">System</div>
+      <a class="nav-link" data-tab="agent" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/><path d="M9 14s1 1 3 1 3-1 3-1"/></svg>
+        <span class="nav-item">
+          <span class="nav-item-label">Alfred</span>
+          <span class="nav-item-sub">OpenClaw · CPU · tokens</span>
+        </span>
+      </a>
+      <a class="nav-link" data-tab="settings" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span class="nav-item">
+          <span class="nav-item-label">Settings</span>
+          <span class="nav-item-sub">Config &amp; brokers</span>
+        </span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="agent-status-entries">
+        <div class="agent-status-entry">
+          <span class="status-dot status-dot--offline" id="dot-alfred"></span>
+          <span>Alfred</span>
+        </div>
+        <div class="agent-status-entry">
+          <span class="status-dot status-dot--offline" id="dot-claude"></span>
+          <span>Claude Code</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-metric">
+        <span class="topbar-label">Portfolio</span>
+        <span class="topbar-value" id="topbar-total">—</span>
+      </div>
+      <div class="topbar-sep"></div>
+      <div class="topbar-metric">
+        <span class="topbar-label">Today P&L</span>
+        <span class="topbar-value" id="topbar-today">—</span>
+      </div>
+      <div class="topbar-sep"></div>
+      <div class="topbar-metric">
+        <span class="topbar-label">All-time P&L</span>
+        <span class="topbar-value" id="topbar-alltime">—</span>
+      </div>
+      <div class="topbar-spacer"></div>
+      <div id="vix-badge" class="topbar-vix hidden"></div>
+      <div class="topbar-clock" id="aest-clock">—</div>
+    </header>
+
+    <!-- Tab Area -->
+    <main class="tab-area">
+
+      <!-- ── Overview Tab ──────────────────────────────────────────────── -->
+      <div class="tab-panel" id="tab-overview">
+        <div id="milestone-banner"></div>
+        <div class="metric-cards-row" id="overview-metrics"></div>
+
+        <div class="charts-row">
+          <div class="panel" style="flex:3">
+            <div class="panel-header"><span>Equity Curve</span></div>
+            <div class="chart-container" style="padding:12px">
+              <canvas id="chart-portfolio"></canvas>
+            </div>
+          </div>
+          <div class="panel" style="flex:1">
+            <div class="panel-header"><span>Allocation</span></div>
+            <div class="chart-container" style="padding:12px">
+              <canvas id="chart-allocation"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-row">
+          <div class="panel" style="flex:1">
+            <div class="panel-header"><span>Monthly P&L</span></div>
+            <div class="chart-container" style="padding:12px">
+              <canvas id="chart-monthly"></canvas>
+            </div>
+          </div>
+          <div class="panel" style="flex:1">
+            <div class="panel-header"><span>P&L by Strategy</span></div>
+            <div class="chart-container" style="padding:12px">
+              <canvas id="chart-strategy"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><span>Agent Activity</span></div>
+          <div class="agent-feed" id="agent-feed"></div>
+        </div>
+      </div>
+
+      <!-- ── Options Tab ───────────────────────────────────────────────── -->
+      <div class="tab-panel hidden" id="tab-options">
+        <div class="tab-context">Paper trading only &nbsp;·&nbsp; 1-DTE IC on META/GOOGL &nbsp;·&nbsp; 0-DTE IC on SPY &nbsp;·&nbsp; No live trades</div>
+        <div class="metric-cards-row" id="options-metrics"></div>
+
+        <div class="charts-row">
+          <div class="panel" style="flex:3">
+            <div class="panel-header">
+              <span>Price Chart</span>
+              <div class="chart-controls">
+                <select id="options-symbol">
+                  <option value="META">META</option>
+                  <option value="GOOGL">GOOGL</option>
+                  <option value="SPY">SPY</option>
+                </select>
+                <div class="timeframe-btns" id="options-tf">
+                  <button class="tf-btn active" data-tf="1d">1D</button>
+                  <button class="tf-btn" data-tf="4h">4H</button>
+                  <button class="tf-btn" data-tf="1h">1H</button>
+                  <button class="tf-btn" data-tf="15m">15m</button>
+                </div>
+              </div>
+            </div>
+            <div class="chart-container" id="chart-options-candle"></div>
+          </div>
+          <div class="panel" style="flex:2">
+            <div class="panel-header"><span>Open Positions</span></div>
+            <div id="options-positions" style="padding:0"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <span>Trade History</span>
+            <button class="btn btn-ghost" id="options-export">Export CSV</button>
+          </div>
+          <div id="options-history"></div>
+        </div>
+      </div>
+
+      <!-- ── Crypto Tab ────────────────────────────────────────────────── -->
+      <div class="tab-panel hidden" id="tab-crypto">
+        <div class="tab-context">EMA(50/200) signals only &nbsp;·&nbsp; BTC / ETH / SOL &nbsp;·&nbsp; No open positions &nbsp;·&nbsp; Not paper trading yet</div>
+        <div class="metric-cards-row" id="crypto-metrics"></div>
+        <div class="charts-row">
+          <div class="panel" style="flex:3">
+            <div class="panel-header">
+              <span>Chart</span>
+              <div class="chart-controls">
+                <select id="crypto-symbol">
+                  <option value="BTC-USD">BTC</option>
+                  <option value="ETH-USD">ETH</option>
+                  <option value="SOL-USD">SOL</option>
+                </select>
+                <div class="timeframe-btns" id="crypto-tf">
+                  <button class="tf-btn active" data-tf="1d">1D</button>
+                  <button class="tf-btn" data-tf="4h">4H</button>
+                  <button class="tf-btn" data-tf="1h">1H</button>
+                </div>
+              </div>
+            </div>
+            <div class="chart-container" id="chart-crypto-candle"></div>
+          </div>
+          <div class="panel" style="flex:2">
+            <div class="panel-header"><span>Open Positions</span></div>
+            <div id="crypto-positions"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <span>Trade History</span>
+            <button class="btn btn-ghost" id="crypto-export">Export CSV</button>
+          </div>
+          <div id="crypto-history"></div>
+        </div>
+      </div>
+
+      <!-- ── Agent Tab ─────────────────────────────────────────────────── -->
+      <div class="tab-panel hidden" id="tab-agent">
+        <div class="tab-context">Alfred agent status &nbsp;·&nbsp; OpenClaw gateway health &nbsp;·&nbsp; System CPU/RAM &nbsp;·&nbsp; Token spend</div>
+        <div class="agent-grid">
+          <div class="panel" id="alfred-panel">
+            <div class="panel-header"><span>Alfred (OpenClaw)</span></div>
+            <div id="alfred-status"></div>
+          </div>
+          <div class="panel" id="claude-panel">
+            <div class="panel-header"><span>System Metrics</span></div>
+            <div id="system-metrics"></div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:12px">
+          <div class="panel-header"><span>Activity Log</span></div>
+          <div id="agent-log" class="log-feed"></div>
+        </div>
+      </div>
+
+      <!-- ── History Tab ───────────────────────────────────────────────── -->
+      <div class="tab-panel hidden" id="tab-history">
+        <div class="tab-context">All trade records &nbsp;·&nbsp; Filter by source below &nbsp;·&nbsp; Paper (4) · Simulation (89) · Backtest (3070)</div>
+        <div class="panel">
+          <div class="panel-header">
+            <span>All Trades</span>
+            <div class="history-filters">
+              <select id="history-source-filter">
+                <option value="">All Sources</option>
+                <option value="paper">Live Paper</option>
+                <option value="simulation">Simulation</option>
+              </select>
+              <select id="history-outcome-filter">
+                <option value="">All Outcomes</option>
+                <option value="WIN">Wins</option>
+                <option value="LOSS">Losses</option>
+              </select>
+              <button class="btn btn-ghost" id="history-export">Export CSV</button>
+            </div>
+          </div>
+          <div class="history-stats" id="history-stats"></div>
+          <div id="history-table-container"></div>
+        </div>
+
+        <div class="charts-row" style="margin-top:12px">
+          <div class="panel" style="flex:2">
+            <div class="panel-header"><span>Equity Curve</span></div>
+            <div class="chart-container" style="padding:12px">
+              <canvas id="chart-equity"></canvas>
+            </div>
+          </div>
+          <div class="panel" style="flex:2">
+            <div class="panel-header"><span>Drawdown</span></div>
+            <div class="chart-container" style="padding:12px">
+              <canvas id="chart-drawdown"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-row" style="margin-top:12px">
+          <div class="panel" style="flex:1" id="best-trade-card">
+            <div class="panel-header"><span>Best Trade</span></div>
+            <div id="best-trade" style="padding:16px"></div>
+          </div>
+          <div class="panel" style="flex:1" id="worst-trade-card">
+            <div class="panel-header"><span>Worst Trade</span></div>
+            <div id="worst-trade" style="padding:16px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Settings Tab ──────────────────────────────────────────────── -->
+      <div class="tab-panel hidden" id="tab-settings">
+        <div class="panel">
+          <div class="panel-header"><span>Configuration</span></div>
+          <div id="settings-form"></div>
+        </div>
+      </div>
+
+    </main>
+  </div><!-- /main-content -->
+</div><!-- /main-app -->
+
+<!-- Scripts -->
+<script src="/static/js/components.js"></script>
+<script src="/static/js/charts.js"></script>
+<script src="/static/js/setup.js"></script>
+<script src="/static/js/dashboard.js"></script>
+<script src="/static/js/options.js"></script>
+<script src="/static/js/crypto.js"></script>
+<script src="/static/js/agent.js"></script>
+<script src="/static/js/history.js"></script>
+<script src="/static/js/app.js"></script>
+
+</body>
+</html>

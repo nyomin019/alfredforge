@@ -1,0 +1,15 @@
+# Database (local data, don't commit)
+alfredforge.db
+
+# Config (may contain tokens)
+alfredforge.conf
+
+# Trading bot / runtime
+trading_bot/
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# macOS
+.DS_Store
